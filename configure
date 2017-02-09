@@ -1,0 +1,14 @@
+#!/bin/bash
+WD=$(pwd)
+RD=$(dirname $0)
+
+echo $WD
+echo $RD
+echo $RD| tr "/" "\n"| grep -wc '..'
+
+if [[ "$RD" == *".."* ]] 
+then
+	echo YES
+else
+	echo NO
+fi
