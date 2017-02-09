@@ -5,28 +5,79 @@ RD=$(dirname $0)
 cd $RD
 WD=$(pwd -P)
 
+# Check if existing $PATH already include $WD. Proceed only if $WD is not included in $PATH
+# Parts of $PATH are separated by ":". 
+N=$(echo $PATH | tr ":" "\n" | grep -c $WD)
+if [ $N -ne 0 ]
+then 
+	echo 'System already configured'
+	exit
+fi
+
 # Ask for permission to edit and source .bash_profile, if it already exists. Otherwise, create and source .bash_profile.
 # Will only proceed if input is "y".
 while [[ "$permission" != "y" ]] && [[ "$permission" != "n" ]]
 do
-	echo "Allow editing ~/.bash_profile? (y/n)"
-	read permission
+	echo 'Allow editing ~/.bash_profile? (y/n)'
+	read -p "> " permission
 	if [[ "$permission" == "y" ]]
 	then 
-		echo "Checking for existing profile..."
+		echo 'Checking for existing profile...'
 	elif [[ "$permission" == "n" ]]
 	then
-		echo "Permission denied. Exiting script..."
+		echo 'Permission denied. Exiting script...'
 		exit
 	else
-		echo "Invalid input!"
+		echo 'Invalid input!'
 	fi
 done
 
+# Check for existing .bash_profile. Append to existing file or create a new file.
+if [ -e ~/.bash_profile ]
+then
+	echo 'Profile already exist. Save a copy of the original profile? (y/n)'
+	read -p "> " prof_save
+	if [[ "$prof_save" == "y" ]]
+	then
+		# Save original profile. Default to .bash_profile_archive. If already existing, ask if to overwrite or save to custom name.
+		if [ ! -e ~/.bash_profile_archive ]
+		then
+			cp ~/.bash_profile ~/.bash_profile_archive
+			echo 'Original profile saved as .bash_profile_archive.'
+		else
+			echo '.bash_profile_archive already exist. Overwrite file? (y/n)'
+			read -p "> " overwrite
+			if [[ "$overwrite" == "y" ]]
+			then
+				cp ~/.bash_profile ~/.bash_profile_archive
+				echo 'Original profile saved as .bash_profile_archive.'
+			else
+				echo 'Enter custom file name. Enter "c" to cancel.'
+				read -p "> " file
+				while [ -e ~/$file ]
+				do
+					echo 'File already exist! Enter a different name. Enter "c" to cancel.'
+					read -p "> " file
+					if [[ "$file" == "c" ]]
+					then
+						echo 'Operation cancelled. Exiting script...'
+						exit
+					fi
+				done
+				if [[ "$file" == "c" ]]
+				then
+					echo 'Operation cancelled. Exiting script...'
+					exit
+				fi
+				cp ~/.bash_profile ~/$file
+				echo 'Original profile saved as ' $file
+			fi
+		fi
+	fi
 
-#if [ -e ~/.bash_profile ]
-#then
-	
-#else
-
-#fi
+	echo 'export PATH=$PATH:'$WD >> ~/.bash_profile
+else
+	# Create a new .bash_profile
+	echo '# User specific environment and startup programs' >> ~/.bash_profile
+	echo 'export PATH=$PATH:'$WD >> ~/.bash_profile
+fi
