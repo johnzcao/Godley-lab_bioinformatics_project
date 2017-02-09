@@ -1,14 +1,32 @@
 #!/bin/bash
-WD=$(pwd)
-RD=$(dirname $0)
 
-echo $WD
-echo $RD
-echo $RD| tr "/" "\n"| grep -wc '..'
+# Obtain the physical path to where the scripts are located, resolving all symbolic links.
+RD=$(dirname $0) 
+cd $RD
+WD=$(pwd -P)
 
-if [[ "$RD" == *".."* ]] 
-then
-	echo YES
-else
-	echo NO
-fi
+# Ask for permission to edit and source .bash_profile, if it already exists. Otherwise, create and source .bash_profile.
+# Will only proceed if input is "y".
+while [[ "$permission" != "y" ]] && [[ "$permission" != "n" ]]
+do
+	echo "Allow editing ~/.bash_profile? (y/n)"
+	read permission
+	if [[ "$permission" == "y" ]]
+	then 
+		echo "Checking for existing profile..."
+	elif [[ "$permission" == "n" ]]
+	then
+		echo "Permission denied. Exiting script..."
+		exit
+	else
+		echo "Invalid input!"
+	fi
+done
+
+
+#if [ -e ~/.bash_profile ]
+#then
+	
+#else
+
+#fi
