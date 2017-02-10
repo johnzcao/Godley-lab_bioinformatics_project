@@ -40,6 +40,7 @@ then
 	if [[ "$prof_save" == "y" ]]
 	then
 		# Save original profile. Default to .bash_profile_archive. If already existing, ask if to overwrite or save to custom name.
+		file=".bash_profile_archive"
 		if [ ! -e ~/.bash_profile_archive ]
 		then
 			cp ~/.bash_profile ~/.bash_profile_archive
@@ -52,23 +53,25 @@ then
 				cp ~/.bash_profile ~/.bash_profile_archive
 				echo 'Original profile saved as .bash_profile_archive.'
 			else
-				echo 'Enter custom file name. Enter "c" to cancel.'
-				read -p "> " file
+				# Check if entered file name already exists.
 				while [ -e ~/$file ]
 				do
-					echo 'File already exist! Enter a different name. Enter "c" to cancel.'
+					echo $file' already exist! Enter a different name. Enter "c" to cancel.'
 					read -p "> " file
-					if [[ "$file" == "c" ]]
-					then
-						echo 'Operation cancelled. Exiting script...'
-						exit
-					fi
 				done
+				# Check if entered file name contains any illegal characters.
+				while [[ -z "$file" || "$file" == *"/"* ]]
+				do
+					echo 'File name cannot be empty or contain "/"! Enter a different name. Enter "c" to cancel.'
+					read -p "> " file
+				done
+				# Exit script when "c" is entered.
 				if [[ "$file" == "c" ]]
 				then
 					echo 'Operation cancelled. Exiting script...'
 					exit
 				fi
+				# Copy file.
 				cp ~/.bash_profile ~/$file
 				echo 'Original profile saved as ' $file
 			fi
@@ -81,3 +84,4 @@ else
 	echo '# User specific environment and startup programs' >> ~/.bash_profile
 	echo 'export PATH=$PATH:'$WD >> ~/.bash_profile
 fi
+source ~/.bash_profile
