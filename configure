@@ -5,6 +5,10 @@ RD=$(dirname $0)
 cd $RD
 WD=$(pwd -P)
 
+# Add executable privilege to all scripts
+LIST='configure scriptCompile'
+chmod u+x $LIST
+
 # Check if existing $PATH already include $WD. Proceed only if $WD is not included in $PATH
 # Parts of $PATH are separated by ":". 
 N=$(echo $PATH | tr ":" "\n" | grep -c $WD)
@@ -53,4 +57,4 @@ else
 fi
 # Add $WD to default path.
 echo 'export PATH=$PATH:'$WD >> ~/.bash_profile
-source ~/.bash_profile
+echo '~/.bash_profile configured.'
