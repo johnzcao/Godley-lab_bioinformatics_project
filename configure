@@ -40,6 +40,7 @@ then
 	if [[ "$prof_save" == "y" ]]
 	then
 		# Save original profile. Default to .bash_profile_archive. If already existing, ask if to overwrite or save to custom name.
+		date +%Y%m%d%H%M 
 		file=".bash_profile_archive"
 		if [ ! -e ~/.bash_profile_archive ]
 		then
