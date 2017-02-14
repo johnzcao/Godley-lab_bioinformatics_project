@@ -38,9 +38,15 @@ then
 	echo 'Found existing profile. Saving a copy of current profile...'
 	# Save original profile, add time stamp to file name.
 	file=".bash_profile_archive_"$(date +%Y%m%d%H%M%S)
+	# Following loop prevents the small possibility that file name already exists.
+	while [ -e ./$file ]
+	do
+		sleep 1 
+		# No need to acquire the date and time more than once per second, since the outcome will not change.
+		file=".bash_profile_archive_"$(date +%Y%m%d%H%M%S)
+	done
 	cp ~/.bash_profile ~/$file
 	echo 'Original profile saved as .bash_profile_archive_'$file'.'
-	# Add $WD to default path.
 else
 	# Create a new .bash_profile
 	echo '# User specific environment and startup programs' >> ~/.bash_profile
