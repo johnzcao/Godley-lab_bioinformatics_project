@@ -12,27 +12,28 @@ chmod u+x $LIST
 # Check if existing $PATH already include $WD. Proceed only if $WD is not included in $PATH
 # Parts of $PATH are separated by ":". 
 N=$(echo $PATH | tr ":" "\n" | grep -c $WD)
-if [ $N -ne 0 ]
+M=$(grep -c $WD ~/.bash_profile)
+if [ $N -ne 0 ] || [ $M -ne 0 ]
 then 
 	echo 'System already configured'
 	exit
 fi
 
 # Ask for permission to edit and source .bash_profile, if it already exists. Otherwise, create and source .bash_profile.
-# Will only proceed if input is "y".
-while [[ "$permission" != "y" ]] && [[ "$permission" != "n" ]]
+# Will only proceed if input is "y" or "Y".
+while [[ ! "$permission" =~ ^[YyNn]$ ]]
 do
-	echo 'Allow editing ~/.bash_profile? (y/n)'
-	read -p "> " permission
-	if [[ "$permission" == "y" ]]
+	echo -e "Adding directory to default PATH. Allow editing ~/.bash_profile? (y/n)"
+	read -n 1 -p "> " permission
+	if [[ "$permission" =~ ~[Yy]$ ]]
 	then 
-		echo 'Checking for existing profile...'
-	elif [[ "$permission" == "n" ]]
+		echo -e "\nChecking for existing profile..."
+	elif [[ "$permission" =~ ^[Nn]$ ]]
 	then
-		echo 'Permission denied. Exiting script...'
+		echo -e "\nPermission denied. Exiting script..."
 		exit
 	else
-		echo 'Invalid input!'
+		echo -e "\nInvalid input!"
 	fi
 done
 
@@ -50,11 +51,17 @@ then
 		file=".bash_profile_archive_"$(date +%Y%m%d%H%M%S)
 	done
 	cp ~/.bash_profile ~/$file
-	echo 'Original profile saved as .bash_profile_archive_'$file'.'
+	echo 'Original profile saved as '$file'.'
 else
 	# Create a new .bash_profile
 	echo '# User specific environment and startup programs' >> ~/.bash_profile
 fi
 # Add $WD to default path.
 echo 'export PATH=$PATH:'$WD >> ~/.bash_profile
-echo '~/.bash_profile configured.'
+echo '~/.bash_profile configured!'
+
+# Instruction to apply configuration.
+# Define font format
+HL='\033[1;38;5;12;48;5;231m'
+NC='\033[0m'
+echo -e "\n\nTo apply changes, please enter and run ${HL}source ~/.bash_profile${NC}.\nOr open a new terminal window.\n"
