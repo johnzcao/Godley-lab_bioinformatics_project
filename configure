@@ -13,10 +13,10 @@ chmod u+x $LIST
 # Parts of $PATH are separated by ":". 
 N=$(echo $PATH | tr ":" "\n" | grep -c $WD)
 M=$(grep -c $WD ~/.bash_profile)
-if [ $N -ne 0 ] || [ $M -ne 0 ]
+if [ "$N" -ne 0 ] || [ "$M" -ne 0 ]
 then 
 	echo 'System already configured'
-	exit
+	exit 0
 fi
 
 # Ask for permission to edit and source .bash_profile, if it already exists. Otherwise, create and source .bash_profile.
