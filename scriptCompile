@@ -1,3 +1,46 @@
 #!/bin/bash
+#####################
+# Functions section #
+#####################
 
+# Define header function. Takes variables $NAME, $TIME and $MEM in this order.
+header () {
+	echo '#!/bin/bash'
+	echo '#PBS -N '$NAME
+	echo '#PBS -S /bin/bash'
+	echo '#PBS -l walltime='$TIME
+	echo '#PBS -l nodes=1:ppn=4'
+	echo '#PBS -l mem='$MEM
+	echo '#PBS -o ./'$NAME'.out'
+	echo '#PBS -e ./'$NAME'.err'
+}
+
+# Define envir function. Writes script to set up work environment. Takes variables $WD and $MOD
+envir () {
+	echo 'cd '$WD
+	N_MODS=${#MOD[@]}
+	for((i=0;i<$N_MODS;i++)){
+		echo 'module load '${MOD[$i]}
+	}
+}
+
+###################
+# Process section #
+###################
+
+
+################
+# Test section #
+################
+
+NAME="test"
+TIME="6:00:00"
+MEM="8gb"
+
+header >> test
+
+WD="~/Bioinformatics_project"
+MOD=("M1" "K2" "F3" "P4" "L5")
+
+envir >> test
 
