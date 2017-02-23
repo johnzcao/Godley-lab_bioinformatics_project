@@ -1,7 +1,78 @@
 #!/bin/bash
+#################
+# Theme section #
+#################
+# Define text themes for highlighting purposes.
+HIL='\033[1;38;5;231;48;5;12m' # (1)-Bold. (38;5;231)-White text. (48;5;12)-Blue background. Use for highlight.
+REV='\033[1;38;5;4;48;5;231m'  # (1)-Bold. (38;5;4)-Dark blue text. (48;5;231)-White background. Use for reverse highlight.
+DEF='\033[0m' # Clear all custom theme.
+echo $HIL $REV $DEF
+# Default theme for working directory
+list=($(ls -F))
+N_FILE=${#list[@]}
+for((i=0;i<=$N_FILE;i++)){
+	THEME+=$DEF
+}
 #####################
 # Functions section #
 #####################
+# Define numlist function for listing files
+numlist () {
+	clear
+	echo "Current directory: "$(pwd)
+	list=($(ls -F))
+	N_FILE=${#list[@]}
+	printf "  ${THEME[0]}0\t..${DEF}\n"
+	for((i=0;i<$N_FILE;i++)){
+		printf "  "${THEME[$((i+1))]}$((i+1))"\t${list[$i]}${DEF}\n"
+	}
+}
+
+# Define browse function
+browse () {
+	numlist
+	while read -p "Enter list number or path to browse folders. Enter \"q\" to exit browse mode. > " char
+	do
+		if [[ "$char" == "q" ]]
+		then
+			break
+		fi
+		if [[ "$char" =~ [0-9] ]] && [ "$char" -le "$N_FILE" ] && [ "$char" -ge 0 ] 
+		then
+			n=$((char-1))
+			if [ "$n" -lt 0 ]
+			then
+				cd ..
+				numlist
+			elif [ -d ${list[$n]} ]
+			then
+				cd ${list[$n]}
+				numlist
+			else
+				echo ${list[$n]}' is not a directory!'
+			fi
+		elif [ -d "$char" ]
+		then
+			cd $char
+			numlist
+		elif [[ "$char" == "~" ]]
+		then
+			cd $HOME
+			numlist
+		elif [[ "$char" == "-" ]]
+		then
+			cd $OLDPWD
+			numlist
+		else
+			echo "Invalid input!"
+		fi
+	done
+}
+
+# Define selection function
+sel () {
+	echo ""
+}
 
 # Define header function. Takes variables $NAME, $TIME and $MEM in this order.
 header () {
@@ -27,20 +98,12 @@ envir () {
 ###################
 # Process section #
 ###################
-
-
+# Load user preferences if profile exists
+if [ -e ~/.bash_profile ]
+then
+	source ~/.bash_profile
+fi
 ################
 # Test section #
 ################
-
-NAME="test"
-TIME="6:00:00"
-MEM="8gb"
-
-header >> test
-
-WD="~/Bioinformatics_project"
-MOD=("M1" "K2" "F3" "P4" "L5")
-
-envir >> test
 
