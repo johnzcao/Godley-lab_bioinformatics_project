@@ -1,77 +1,201 @@
 #!/bin/bash
-#################
-# Theme section #
-#################
+##################################
+# Initiate environment variables #
+##################################
 # Define text themes for highlighting purposes.
-HIL='\033[1;38;5;231;48;5;12m' # (1)-Bold. (38;5;231)-White text. (48;5;12)-Blue background. Use for highlight.
-REV='\033[1;38;5;4;48;5;231m'  # (1)-Bold. (38;5;4)-Dark blue text. (48;5;231)-White background. Use for reverse highlight.
+HIL='\033[1;38;5;231;48;5;12m' # (1)-Bold. (38;5;231)-White text. (48;5;12)-Blue background. Use for selected items.
+NOR='\033[1;38;5;4;48;5;231m'  # (1)-Bold. (38;5;4)-Dark blue text. (48;5;231)-White background. Use for unselected items.
+NSL='\033[1;38;5;250;48;5;231m' # (1)-Bold. (38;5;250)-Light grey text. (48;5;231)-White background. Use for not selectable items.
+FIL='\033[1;30;48;5;231m'  # (1)-Bold. (30)-Black text. (48;5;231)-White background. For regular file.
+EXE='\033[1;38;5;10;48;5;231m'  # (1)-Bold. (38;5;10)-Green text. (48;5;231)-White background. For executable file.
+DRC='\033[1;38;5;12;48;5;231m'  # (1)-Bold. (38;5;12)-Blue text. (48;5;231)-White background. For directory.
 DEF='\033[0m' # Clear all custom theme.
-echo $HIL $REV $DEF
-# Default theme for working directory
-list=($(ls -F))
-N_FILE=${#list[@]}
-for((i=0;i<=$N_FILE;i++)){
-	THEME+=$DEF
-}
+
+BWS=0 # Toggle browse when value is 1
+SLC=0 # Toggle sel when value is 1
+
 #####################
 # Functions section #
 #####################
+# Define setTheme function. This will define the color output of the browse and select functions
+# Takes one argument, "browse", "file", "dir", or "select". Can inherit from numlist function.
+setTheme () {
+	list=(".." $(ls -F))
+	N_FILE=${#list[@]}
+	case "$1" in
+		"browse")
+			THEME=()
+			for((i=0;i<$N_FILE;i++)){
+				if [ -d "${list[$i]}" ]
+				then
+					THEME+=("$DRC")
+				elif [ -x "${list[$i]}" ]
+				then
+					THEME+=("$EXE")
+				else
+					THEME+=("$FIL")
+				fi
+			}
+		;;
+		"file")
+			THEME=()
+			for((i=0;i<$N_FILE;i++)){
+				if [ -f "${list[$i]}" ] 
+				then
+					THEME+=("$NOR")
+				else
+					THEME+=("$NSL")
+				fi
+			}
+		;;
+		"dir")
+			THEME=()
+			for((i=0;i<$N_FILE;i++)){
+				if [ -d "${list[$i]}" ]
+				then
+					THEME+=("$NOR")
+				else
+					THEME+=("$NSL")
+				fi
+			}
+		;;
+		"select")
+			THEME=()
+			for((i=0;i<=$N_FILE;i++)){
+				if [[ "${SEL_STAT[$i]}" == 0 ]]
+				then
+					THEME+=("$NOR")
+				elif [[ "${SEL_STAT[$i]}" == 1 ]]
+				then
+					THEME+=("$HIL")
+				else
+					THEME+=("$NSL")
+				fi
+			}
+		;;
+	esac
+}
+
 # Define numlist function for listing files
 numlist () {
 	clear
+	setTheme $1
 	echo "Current directory: "$(pwd)
-	list=($(ls -F))
+	list=(".." $(ls -F))
 	N_FILE=${#list[@]}
-	printf "  ${THEME[0]}0\t..${DEF}\n"
 	for((i=0;i<$N_FILE;i++)){
-		printf "  "${THEME[$((i+1))]}$((i+1))"\t${list[$i]}${DEF}\n"
+		printf "${THEME[$i]}  $i\t${list[$i]} \n"
 	}
+	printf "${DEF}"
 }
 
 # Define browse function
 browse () {
-	numlist
-	while read -p "Enter list number or path to browse folders. Enter \"q\" to exit browse mode. > " char
+	numlist browse
+	BWS=1
+	while read -p "Enter list number or path to browse folders. Enter \"s\" to toggle select mode or \"q\" to exit. > " char
 	do
-		if [[ "$char" == "q" ]]
+		if [[ "$char" == [qQ] ]]
 		then
+			BWS=0
 			break
-		fi
-		if [[ "$char" =~ [0-9] ]] && [ "$char" -le "$N_FILE" ] && [ "$char" -ge 0 ] 
+		elif [[ "$char" == [sS] ]]
 		then
-			n=$((char-1))
-			if [ "$n" -lt 0 ]
+			BWS=0
+			SLC=1
+			break
+		elif [[ "$char" =~ [0-9] ]] && [ "$char" -le "$N_FILE" ] && [ "$char" -ge 0 ] 
+		then
+			if [ -d ${list[$char]} ]
 			then
-				cd ..
-				numlist
-			elif [ -d ${list[$n]} ]
-			then
-				cd ${list[$n]}
-				numlist
+				cd ${list[$char]}
+				numlist browse
 			else
-				echo ${list[$n]}' is not a directory!'
+				echo ${list[$char]}' is not a directory!'
 			fi
 		elif [ -d "$char" ]
 		then
 			cd $char
-			numlist
+			numlist browse
 		elif [[ "$char" == "~" ]]
 		then
 			cd $HOME
-			numlist
+			numlist browse
 		elif [[ "$char" == "-" ]]
 		then
 			cd $OLDPWD
-			numlist
+			numlist browse
 		else
 			echo "Invalid input!"
 		fi
 	done
 }
 
-# Define selection function
+# Define selection function. Display varies base on allowed selections ("file" or "dir").
 sel () {
-	echo ""
+	numlist $1
+	SLC=1
+	SEL_STAT=()
+	case "$1" in
+		"file")
+			for((i=0;i<$N_FILE;i++)){
+				if [ -f "${list[$i]}" ]
+				then
+					SEL_STAT+=(0)
+				else
+					SEL_STAT+=(-1)
+				fi
+			}
+		;;
+		"dir")
+			for((i=0;i<$N_FILE;i++)){
+				if [ -d "${list[$i]}" ]
+				then
+					SEL_STAT+=(0)
+				else
+					SEL_STAT+=(-1)
+				fi
+			}
+		;;
+	esac
+	while read -p "Select files by numbers. Enter \"b\" to toggle browse mode or \"q\" to exit. Enter \"y\" to confirm selections. > " -a file
+	do
+		if [[ ${file[0]} == [bB]  ]]
+		then
+			SLC=0
+			BWS=1
+			break
+		elif [[ ${file[0]} == [qQ]  ]]
+		then
+			SLC=0
+			break
+		elif [[ ${file[0]} == [yY]  ]]
+		then
+			SELECTED=()
+			for((i=0;i<$N_FILE;i++)) {
+				if [[ ${SEL_STAT[$i]} == 1 ]]
+				then
+					SELECTED+=(${list[$i]})
+				fi
+			}
+			break
+			
+		else
+			for i in ${file[@]}
+			do
+				if [ "${SEL_STAT[$i]}" -eq 0 ]
+				then
+					SEL_STAT[$i]=1
+				elif [ "${SEL_STAT[$i]}" -eq 1 ]
+				then
+					SEL_STAT[$i]=0
+				else
+					printf "${list[$i]} cannot be selected!"
+				fi
+			done 
+		fi
+		numlist select
+	done
 }
 
 # Define header function. Takes variables $NAME, $TIME and $MEM in this order.
@@ -98,12 +222,13 @@ envir () {
 ###################
 # Process section #
 ###################
-# Load user preferences if profile exists
-if [ -e ~/.bash_profile ]
-then
-	source ~/.bash_profile
-fi
+# Set working directory
+
+
+
 ################
 # Test section #
 ################
-
+browse
+sel file
+echo ${SELECTED[@]}
