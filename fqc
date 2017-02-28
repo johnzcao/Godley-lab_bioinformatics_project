@@ -1,0 +1,131 @@
+#!/bin/bash
+# To compile a FastQC script for raw .fastq data.
+# Can be individually executed or accessed by parent shell. 
+
+# Define flags
+# -I interactive mode, to select file and directories interactively
+# --help display help message and exit
+# -o define output directory
+# -w define working directory
+# -f define format
+# -d add all file in directory, restricted by -f
+# -p print output lines to screen instead of saving as script
+
+# Display help if --help is used or if enter interactive mode.
+if [[ "$1" == "--help" ]]
+then
+	printf "help message\n"
+	exit 0
+elif [[ "$1" == "-I" ]]
+then
+	# Start interactive mode
+	printf "Interactive mode\n"
+	exit 0
+fi
+
+# Check syntax of input
+ARGS=($@)
+N=${#ARGS[@]}
+OPT=()
+OPT_D=0
+OPT_F=0
+# Following loop check any missing invalid arguments.
+for((i=0;i<$N;i++)){
+	case "${ARGS[$i]}" in
+		-d|-o|-w)
+			if [[ "${ARGS[$((i+1))]}" == -[dfopw] ]]
+			then
+				printf "Error: No directory specified for option ${ARGS[$i]}.\n"
+				exit 1
+			elif [ ! -d ${ARGS[$((i+1))]} ]
+			then
+				printf "Error: ${ARGS[$((i+1))]} is not a directory.\n"
+				exit 1
+			fi
+			OPT+=($i)
+			if [[ "${ARGS[$i]}" == "-d" ]]
+			then
+				OPT_D=1
+			fi
+		;;
+		-f)
+			if [[ "${ARGS[$((i+1))]}" == -[dfopw] ]]
+			then
+				printf "Error: No format specified for option -f.\n"
+				exit 1
+			elif [[ ! "${ARGS[$((i+1))]}" == fastq ]] && [[ ! "${ARGS[$((i+1))]}" == [bs]am ]]
+			then
+				printf "Error: Invalid format. Format must be one of fastq, sam, or bam.\n"
+				exit 1
+			fi
+			OPT+=($i)
+			OPT_F=1
+		;;
+		-p) OPT+=($i) ;;
+		*) continue ;;
+	esac
+}
+if [ $OPT_F -eq 1 ] && [ $OPT_D -eq 0 ]
+then
+	printf "Error: -f option must be used with -d option.\n"
+	exit 1
+fi
+# Define default values if options are not invoked
+WD=$(pwd)
+OUTDIR=$(pwd)
+PRT=0
+# Following loop applies the options
+FILES=(${ARGS[@]})
+echo ${FILES[@]}
+for i in ${OPT[@]}
+do
+	case "${ARGS[$i]}" in
+		-d|-f|-o|-w)
+			unset "FILES[$i]"
+			unset "FILES[$((i+1))]"
+		;;
+		-p) unset "FILES[$i]" ;;
+	esac
+	case "${ARGS[$i]}" in
+		-d) INDIR=${ARGS[$((i+1))]} ;;
+		-f) FMT=${ARGS[$((i+1))]} ;;
+		-o) OUTDIR=${ARGS[$((i+1))]} ;;
+		-p) PRT=1;;
+		-w) WD=${ARGS[$((i+1))]};;
+	esac
+done
+echo ${OPT[@]}
+echo ${FILES[@]}
+
+# Check input files
+
+for i in ${FILES[@]}
+do
+	if [ ! -e $i ]
+	then
+		printf "Error: $i does not exist!\n"
+		exit 1
+	elif [ -d $i ]
+	then
+		printf "$i is a directory. Use -d flag to add directory.\n"
+	elif [[ "$i" != *.fastq* ]] && [[ "$i" != *.[bs]am* ]]
+	then
+		printf "Warning: $i may not be a valid format (fastq, sam, or bam). Skip? (y/n)\n"
+		while read -p "> " skip
+		do
+			case "$skip" in
+				Y|y)
+					FILES=(${FILES[@]/$i})
+					break
+				;;
+				N|n) break ;;
+				*) continue ;;
+			esac
+		done
+	fi
+done
+echo ${FILES[@]}
+
+# Resolve list of input files
+
+# Final output
